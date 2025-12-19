@@ -28,12 +28,12 @@ public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<
             .SelectMany(s => s.Errors)
             .Where(s => s != null)
             .GroupBy(
-            s => s.PropertyName,
-            s => s.ErrorMessage, (propertyName, errorMessage) => new
-            {
-                Key = propertyName,
-                Values = errorMessage.Distinct().ToArray()
-            })
+                s => s.PropertyName,
+                s => s.ErrorMessage, (propertyName, errorMessage) => new
+                {
+                    Key = propertyName,
+                    Values = errorMessage.Distinct().ToArray()
+                })
             .ToDictionary(s => s.Key, s => s.Values[0]);
 
         if (errorDictionary.Any())
@@ -41,9 +41,12 @@ public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<
             var errors = errorDictionary.Select(s => new ValidationFailure
             {
                 PropertyName = s.Value,
-                ErrorCode = s.Key
+                ErrorMessage = s.Key
             });
             throw new ValidationException(errors);
         }
 
         return await next();
+    } // <-- Added missing closing brace for the method
+} // <-- Added missing closing brace for the class
+

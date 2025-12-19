@@ -3,5 +3,6 @@
     <Project Path="D:/RentCar/RentCarServer/src/RentCarServer.Domain/RentCarServer.Domain.csproj" />
     <Project Path="src/RentCarServer.Application/RentCarServer.Application.csproj" />
     <Project Path="src/RentCarServer.Infrastructure/RentCarServer.Infrastructure.csproj" Id="8b715d5c-5edb-415c-a204-661db929d4f7" />
+    <Project Path="src/RentCarServer.WebAPI/RentCarServer.WebAPI.csproj" Id="d4758174-7d51-463d-aa35-823518c9e63c" />
   </Folder>
 </Solution>

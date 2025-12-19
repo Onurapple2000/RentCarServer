@@ -1,16 +1,20 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using GenericRepository;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using RentCarServer.Domain.Abstractions;
+using RentCarServer.Domain.User;
 using System.Security.Claims;
 
 namespace RentCarServer.Infrastructure.Context;
 
-public sealed class ApplicationDbContext : DbContext
+public sealed class ApplicationDbContext : DbContext, IUnitOfWork
 {
 
     public ApplicationDbContext(DbContextOptions options) : base(options)
     {
     }
+
+    public DbSet<User> Users { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -33,12 +37,12 @@ public sealed class ApplicationDbContext : DbContext
 
         HttpContextAccessor httpContextAccessor = new();
         string userIdString =
-            httpContextAccessor
-            .HttpContext!
-            .User
-            .Claims
-            .First(p => p.Type == ClaimTypes.NameIdentifier)
-            .Value;
+        httpContextAccessor
+        .HttpContext!
+        .User
+        .Claims
+        .First(p => p.Type == ClaimTypes.NameIdentifier)
+        .Value;
 
         Guid userId = Guid.Parse(userIdString);
         IdentityId identityId = new(userId);
