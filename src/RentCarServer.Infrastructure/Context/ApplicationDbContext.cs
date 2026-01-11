@@ -1,7 +1,12 @@
 ﻿using GenericRepository;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using RentCarServer.Domain.Abstractions;
+using RentCarServer.Domain.Branches;
+using RentCarServer.Domain.Denemeler;
+using RentCarServer.Domain.LoginTokens;
+using RentCarServer.Domain.Roles;
 using RentCarServer.Domain.User;
 using System.Security.Claims;
 
@@ -14,20 +19,26 @@ public sealed class ApplicationDbContext : DbContext, IUnitOfWork
     {
     }
 
-    public DbSet<User> Users { get; set; }
+    //public DbSet<User> Users { get; set; } bunlara gerek kalmadı çünkü configuration dostasında ToTable ile tabloyu gösterdik
+    //public DbSet<LoginToken> LoginTokens { get; set; }
+    //public DbSet<Branch> Branchs { get; set; }
+    //public DbSet<Deneme> Denemeler { get; set; }
+    //public DbSet<Role> Roles { get; set; }
+
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
-        modelBuilder.ApplyGlobalFilters();
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly); // benim yadığım configurationsları otomatik olarak bulup ekliyor. configurations klasörü altında Her Entity için var
+        modelBuilder.ApplyGlobalFilters(); // burada global filtreleri uyguluyoruz soft delete için. EF bunu otomatik olarak GetAll içerisine ekliyor.
         base.OnModelCreating(modelBuilder);
     }
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
-        configurationBuilder.Properties<IdentityId>().HaveConversion<IdentityIdValueConverter>();
+        configurationBuilder.Properties<IdentityId>().HaveConversion<IdentityIdValueConverter>(); //burada userId için özel olarak işaretleme yappıyoruz bu şekilde tekrar konfigurasyon yapmaya gerek kalmıyor.böylece tüm IdentityId tipleri için bu konvertör kullanılır. EF db de Guid olarak saklanacağını bilir.
         configurationBuilder.Properties<decimal>().HaveColumnType("decimal(18,2)");
-        configurationBuilder.Properties<string>().HaveColumnType("varchar(MAX)");
+        configurationBuilder.Properties<string>().HaveColumnType("nvarchar(MAX)");
         base.ConfigureConventions(configurationBuilder);
     }
 
@@ -36,13 +47,19 @@ public sealed class ApplicationDbContext : DbContext, IUnitOfWork
         var entries = ChangeTracker.Entries<Entity>();
 
         HttpContextAccessor httpContextAccessor = new();
-        string userIdString =
+        string? userIdString =
         httpContextAccessor
-        .HttpContext!
+        .HttpContext?
         .User
         .Claims
-        .First(p => p.Type == ClaimTypes.NameIdentifier)
+        .FirstOrDefault(p => p.Type == ClaimTypes.NameIdentifier)?
         .Value;
+
+        if (userIdString is null)
+        {
+            return base.SaveChangesAsync(cancellationToken);
+        }
+
 
         Guid userId = Guid.Parse(userIdString);
         IdentityId identityId = new(userId);

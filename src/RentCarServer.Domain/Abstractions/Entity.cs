@@ -1,4 +1,7 @@
 ﻿namespace RentCarServer.Domain.Abstractions;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
+using RentCarServer.Domain.User;
 
 public abstract class Entity
 {
@@ -7,6 +10,9 @@ public abstract class Entity
         Id = new IdentityId(Guid.CreateVersion7()); //sıralanabilir GUID oluşturuyor
         IsActive = true;
     }
+
+   
+
     public IdentityId Id { get; private set; }
     public bool IsActive { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
@@ -26,6 +32,9 @@ public abstract class Entity
     {
         IsDeleted = true;
     }
+
+    
+  
 }
 
 public sealed record IdentityId(Guid Value)

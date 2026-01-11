@@ -1,4 +1,9 @@
 ﻿using GenericRepository;
+using RentCarServer.Application.Services;
+using RentCarServer.Domain.Abstractions;
+using RentCarServer.Domain.Branches;
+using RentCarServer.Domain.Roles;
+using RentCarServer.Domain.Shared;
 using RentCarServer.Domain.User;
 using RentCarServer.Domain.User.ValueObject;
 
@@ -9,28 +14,67 @@ public static class ExtensionMethods
     public static async Task CreateFirstUser(this WebApplication app)
     {
         using var scoped = app.Services.CreateScope();
-        var userRepository = scoped.ServiceProvider.GetRequiredService<IUserRepository>();
-        var uniOfWork = scoped.ServiceProvider.GetRequiredService<IUnitOfWork>();
+        var srv = scoped.ServiceProvider;
+        var userRepository = srv.GetRequiredService<IUserRepository>();
+        var roleRepository = srv.GetRequiredService<IRoleRepository>();
+        var branchRepository = srv.GetRequiredService<IBranchRepository>();
+        var unitOfWork = srv.GetRequiredService<IUnitOfWork>();
+
+        Branch? branch = await branchRepository.FirstOrDefaultAsync(i => i.Name.Value == "Merkez Şube");
+        Role? role = await roleRepository.FirstOrDefaultAsync(i => i.Name.Value == "sys_admin");
+
+        if (branch is null)
+        {
+            Name name = new("Merkez Şube");
+            Address address = new(
+                "İstanbul",
+                "Fatih",
+                "Aksaray");
+            Contact contact = new(
+                "2122251015",
+                "2122251016",
+                "infoMerkez@rentcar.com");
+            branch = new(name, address, contact, true);
+            branchRepository.Add(branch);
+        }
+
+        if (role is null)
+        {
+            Name name = new("sys_admin");
+            role = new(name, true);
+            roleRepository.Add(role);
+        }
 
         if (!(await userRepository.AnyAsync(p => p.UserName.Value == "admin")))
         {
-            FirstName firstName = new FirstName("Admin");
-            LastName lastName = new LastName("Admin");
-            FullName fullName = new FullName("Admin Admin");
-            Email email = new Email("admin@deneme.com");
-            UserName username = new UserName("admin");
-            Password password = new("admin123");
-
+            FirstName firstName = new("Admin");
+            LastName lastName = new("Admin");
+            Email email = new("admin@rentcar.com");
+            UserName userName = new("Admin");
+            Password password = new("1");
+            IdentityId branchId = branch.Id;
+            IdentityId roleId = role.Id;
 
             var user = new User(
                 firstName,
                 lastName,
                 email,
-                username,
-                password
-                );
+                userName,
+                password,
+                branchId,
+                roleId,
+                true);
+
             userRepository.Add(user);
-            await uniOfWork.SaveChangesAsync();
+            await unitOfWork.SaveChangesAsync();
         }
+    }
+
+    public static async Task CleanRemovedPermissionsFromRoleAsync(this WebApplication app)
+    {
+        using var scoped = app.Services.CreateScope();
+        var srv = scoped.ServiceProvider;
+        var service = srv.GetRequiredService<PermissionCleanerSevice>();
+        await service.CleanRemovedPermissionsFromRolesAsync();
     }
 }
